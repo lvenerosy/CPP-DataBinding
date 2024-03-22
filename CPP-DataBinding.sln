@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CPP-DataBinding", "CPP-DataBinding\CPP-DataBinding.vcxproj", "{FD4F24D5-4D4D-4CAF-B2A8-9BE68A8CD359}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CPP-DataBindingTest", "CPP-DataBindingTest\CPP-DataBindingTest.vcxproj", "{D4F0F48C-D37B-4EA1-82D3-3A3BB058D2A1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FD4F24D5-4D4D-4CAF-B2A8-9BE68A8CD359} = {FD4F24D5-4D4D-4CAF-B2A8-9BE68A8CD359}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

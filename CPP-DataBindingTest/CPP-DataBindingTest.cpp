@@ -1,20 +1,76 @@
-// CPP-DataBindingTest.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include <iostream>
+#include <list>
+#include <string>
+
+#include <DefaultProperty.h>
 
 int main()
 {
-    std::cout << "Hello World!\n";
+	class PersonModel
+	{
+	public:
+		std::string ToString() const { return FirstName + " " + LastName; }
+
+		void SetFirstName(const std::string& NewFirstName) { FirstName = NewFirstName; }
+		void SetLastName(const std::string& NewLastName) { LastName = NewLastName; }
+
+	private:
+		std::string FirstName = "OldFirstName";
+		std::string LastName = "OldLastName";
+	};
+
+	class PersonView
+	{
+	public:
+		const std::function<bool(PersonModel&)> OnPreNameChange = [](PersonModel& PersonData) -> bool
+		{
+			std::cout << "Pre name change : " << PersonData.ToString() << "\n";
+
+			return true;
+		};
+
+		const std::function<bool(PersonModel&)> OnPostNameChange = [](PersonModel& PersonData) -> bool
+		{
+			std::cout << "Post name change : " << PersonData.ToString() << "\n";
+
+			return true;
+		};
+	};
+
+	class PersonViewModel
+	{
+	public:
+		PersonViewModel(PersonModel& PersonData) : PersonProperty(PersonData) {}
+
+		// Could be done for each member variable of PersonModel instead
+		DataBinding::DefaultProperty<PersonModel> PersonProperty;
+
+		void RunChangeNameCommand(const std::string& NewFirstName, const std::string& NewLastName)
+		{
+			const DataBinding::PropertyBase<PersonModel>::ECommandStatus CommandStatus = PersonProperty.RunCommand([&NewFirstName, &NewLastName, this](PersonModel& PersonData) -> bool
+			{
+				PersonData.SetFirstName(NewFirstName);
+				PersonData.SetLastName(NewLastName);
+
+				return true;
+			});
+
+			std::cout << "Command status : " << (int)CommandStatus << "\n";
+		}
+	};
+
+	PersonModel PersonData;
+	PersonViewModel PersonBindings(PersonData);
+	PersonView PersonUI;
+
+	auto PreTransformHandle = PersonBindings.PersonProperty.SubscribePreTransform(PersonUI.OnPreNameChange);
+	PersonBindings.PersonProperty.SubscribePostTransform(PersonUI.OnPostNameChange);
+
+	PersonBindings.RunChangeNameCommand("NewFirstName", "NewLastName");
+
+	PersonBindings.PersonProperty.Unsubscribe(PreTransformHandle);
+
+	PersonBindings.RunChangeNameCommand("NewestFirstName", "NewestLastName");
+
+    std::cout << "END\n";
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
