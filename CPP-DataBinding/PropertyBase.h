@@ -44,8 +44,25 @@ public:
 	PropertyBase(BoundDataType& BoundDataValue) : BoundData(&BoundDataValue) {}
 	virtual ~PropertyBase() {}
 
-	virtual PropertySubscriberHandle SubscribePreTransform(std::function<bool(BoundDataType&)> Delegate) = 0;
-	virtual PropertySubscriberHandle SubscribePostTransform(std::function<bool(BoundDataType&)> Delegate) = 0;
+	PropertySubscriberHandle SubscribePreTransform(std::function<bool(BoundDataType&)> Delegate, bool ExecuteOnSubscribe)
+	{
+		if (ExecuteOnSubscribe)
+		{
+			Delegate(*BoundData);
+		}
+
+		return OnSubscribePreTransform(Delegate);
+	}
+
+	PropertySubscriberHandle SubscribePostTransform(std::function<bool(BoundDataType&)> Delegate, bool ExecuteOnSubscribe)
+	{
+		if (ExecuteOnSubscribe)
+		{
+			Delegate(*BoundData);
+		}
+
+		return OnSubscribePostTransform(Delegate);
+	}
 
 	virtual bool Unsubscribe(PropertySubscriberHandle SubscriberHandle) = 0;
 	virtual void UnsubscribeAll() = 0;
@@ -82,6 +99,9 @@ public:
 	}
 
 protected:
+	virtual PropertySubscriberHandle OnSubscribePreTransform(std::function<bool(BoundDataType&)> Delegate) = 0;
+	virtual PropertySubscriberHandle OnSubscribePostTransform(std::function<bool(BoundDataType&)> Delegate) = 0;
+
 	virtual bool OnPreTransform(BoundDataType& BoundData) = 0;
 	virtual bool OnPostTransform(BoundDataType& BoundData) = 0;
 

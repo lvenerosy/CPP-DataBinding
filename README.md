@@ -60,12 +60,26 @@ PersonModel PersonData;
 PersonViewModel PersonBindings(PersonData);
 PersonView PersonUI;
 
-auto PreTransformHandle = PersonBindings.PersonProperty.SubscribePreTransform(PersonUI.OnPreNameChange);
-PersonBindings.PersonProperty.SubscribePostTransform(PersonUI.OnPostNameChange);
+constexpr bool ExecuteOnSubscribe = true;
+
+auto PreTransformHandle = PersonBindings.PersonProperty.SubscribePreTransform(PersonUI.OnPreNameChange, ExecuteOnSubscribe);
+PersonBindings.PersonProperty.SubscribePostTransform(PersonUI.OnPostNameChange, !ExecuteOnSubscribe);
 
 PersonBindings.RunChangeNameCommand("NewFirstName", "NewLastName");
 
 PersonBindings.PersonProperty.Unsubscribe(PreTransformHandle);
 
 PersonBindings.RunChangeNameCommand("NewestFirstName", "NewestLastName");
+```
+
+Possible output
+
+```
+Pre name change : OldFirstName OldLastName
+Pre name change : OldFirstName OldLastName
+Post name change : NewFirstName NewLastName
+Command status : 4
+Post name change : NewestFirstName NewestLastName
+Command status : 4
+END
 ```

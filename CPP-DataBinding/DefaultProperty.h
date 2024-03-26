@@ -17,16 +17,6 @@ class DefaultProperty final : public PropertyBase<BoundDataType>
 public:
 	DefaultProperty(BoundDataType& BoundDataValue) : PropertyBase<BoundDataType>(BoundDataValue) {}
 
-	PropertySubscriberHandle SubscribePreTransform(std::function<bool(BoundDataType&)> Delegate) override
-	{
-		return Subscribe(Delegate, PreOrderedSubscriberHandlesToDelegates);
-	}
-
-	PropertySubscriberHandle SubscribePostTransform(std::function<bool(BoundDataType&)> Delegate) override
-	{
-		return Subscribe(Delegate, PostOrderedSubscriberHandlesToDelegates);
-	}
-
 	bool Unsubscribe(PropertySubscriberHandle SubscriberHandle) override
 	{
 		if (SubscriberHandle.IsSubscribed())
@@ -91,6 +81,16 @@ public:
 	}
 
 protected:
+	PropertySubscriberHandle OnSubscribePreTransform(std::function<bool(BoundDataType&)> Delegate) override
+	{
+		return Subscribe(Delegate, PreOrderedSubscriberHandlesToDelegates);
+	}
+
+	PropertySubscriberHandle OnSubscribePostTransform(std::function<bool(BoundDataType&)> Delegate) override
+	{
+		return Subscribe(Delegate, PostOrderedSubscriberHandlesToDelegates);
+	}
+
 	bool OnPreTransform(BoundDataType& BoundData) override
 	{
 		for (const auto& SubscriberHandleToDelegate : PreOrderedSubscriberHandlesToDelegates)
