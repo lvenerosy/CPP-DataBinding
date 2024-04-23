@@ -1,10 +1,11 @@
 #include <iostream>
 #include <list>
 #include <string>
+#include <vector>
 
 #include <DefaultProperty.h>
 
-int main()
+void MVVM_Example()
 {
 	class PersonModel
 	{
@@ -22,14 +23,14 @@ int main()
 	class PersonView
 	{
 	public:
-		const std::function<bool(PersonModel&)> OnPreNameChange = [](PersonModel& PersonData) -> bool
+		const DataBinding::PropertyBase<PersonModel>::TransformerType OnPreNameChange = [](PersonModel& PersonData, nullptr_t&) -> bool
 		{
 			std::cout << "Pre name change : " << PersonData.ToString() << "\n";
 
 			return true;
 		};
 
-		const std::function<bool(PersonModel&)> OnPostNameChange = [](PersonModel& PersonData) -> bool
+		const DataBinding::PropertyBase<PersonModel>::TransformerType OnPostNameChange = [](PersonModel& PersonData, nullptr_t&) -> bool
 		{
 			std::cout << "Post name change : " << PersonData.ToString() << "\n";
 
@@ -47,17 +48,19 @@ int main()
 
 		void RunChangeNameCommand(const std::string& NewFirstName, const std::string& NewLastName)
 		{
-			const DataBinding::PropertyBase<PersonModel>::ECommandStatus CommandStatus = PersonProperty.RunCommand([&NewFirstName, &NewLastName, this](PersonModel& PersonData) -> bool
+			const DataBinding::PropertyBase<PersonModel>::ECommandStatus CommandStatus = PersonProperty.RunCommand([&NewFirstName, &NewLastName, this](PersonModel& PersonData, nullptr_t&) -> bool
 			{
 				PersonData.SetFirstName(NewFirstName);
 				PersonData.SetLastName(NewLastName);
 
 				return true;
-			});
+			}, DataBinding::NullContext);
 
 			std::cout << "Command status : " << (int)CommandStatus << "\n";
 		}
 	};
+
+	std::cout << "BEGIN MVVM EXAMPLE\n";
 
 	PersonModel PersonData;
 	PersonViewModel PersonBindings(PersonData);
@@ -65,8 +68,8 @@ int main()
 
 	constexpr bool ExecuteOnSubscribe = true;
 
-	auto PreTransformHandle = PersonBindings.PersonProperty.SubscribePreTransform(PersonUI.OnPreNameChange, ExecuteOnSubscribe);
-	PersonBindings.PersonProperty.SubscribePostTransform(PersonUI.OnPostNameChange, !ExecuteOnSubscribe);
+	auto PreTransformHandle = PersonBindings.PersonProperty.ExecuteAndSubscribePreTransform(PersonUI.OnPreNameChange, DataBinding::NullContext);
+	PersonBindings.PersonProperty.SubscribePostTransform(PersonUI.OnPostNameChange);
 
 	PersonBindings.RunChangeNameCommand("NewFirstName", "NewLastName");
 
@@ -74,5 +77,68 @@ int main()
 
 	PersonBindings.RunChangeNameCommand("NewestFirstName", "NewestLastName");
 
-    std::cout << "END\n";
+	std::cout << "END MVVM EXAMPLE\n";
+}
+
+void ContextExample()
+{
+	struct VectorContext
+	{
+		int TargetIndex = -1;
+	};
+
+	const DataBinding::PropertyBase<std::vector<int>, VectorContext>::TransformerType OnPreInsertOrPushback = [](std::vector<int>& Values, VectorContext& Context) -> bool
+	{
+		std::cout << "Current value at index : ";
+
+		(Context.TargetIndex >= 0 && Context.TargetIndex < Values.size()) ?
+			std::cout << Values[Context.TargetIndex] :
+			std::cout << "Index not in range, will pushback instead";
+		std::cout << "\n";
+
+		return true;
+	};
+
+	const DataBinding::PropertyBase<std::vector<int>, VectorContext>::TransformerType OnPostInsertOrPushback = [](std::vector<int>& Values, VectorContext& Context) -> bool
+	{
+		std::cout << "New value " << Values.at(Context.TargetIndex) << " at index " << Context.TargetIndex << "\n";
+
+		return true;
+	};
+
+	std::cout << "BEGIN CONTEXT EXAMPLE\n";
+
+	VectorContext InsertionContext;
+
+	std::vector<int> Values{ 1, 2, 3, 4 };
+	const int ValueToAdd = 5;
+
+	DataBinding::DefaultProperty<std::vector<int>, VectorContext> ValuesProperty(Values);
+
+	ValuesProperty.SubscribePreTransform(OnPreInsertOrPushback);
+	ValuesProperty.SubscribePostTransform(OnPostInsertOrPushback);
+
+	ValuesProperty.RunCommand([ValueToAdd](std::vector<int>& Values, VectorContext& Context) -> bool
+	{
+		if (Context.TargetIndex >= 0 && Context.TargetIndex < Values.size())
+		{
+			Values.insert(Values.cbegin() + Context.TargetIndex, ValueToAdd);
+		}
+		else
+		{
+			Context.TargetIndex = (int)Values.size();
+			Values.push_back(ValueToAdd);
+		}
+
+		return true;
+	}, InsertionContext);
+
+	std::cout << "END CONTEXT EXAMPLE\n";
+}
+
+int main()
+{
+	MVVM_Example();
+	std::cout << std::endl;
+	ContextExample();
 }

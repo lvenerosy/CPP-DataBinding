@@ -9,13 +9,13 @@
 namespace DataBinding
 {
 
-template<class BoundDataType>
-class DefaultProperty final : public PropertyBase<BoundDataType>
+template<class BoundDataType, typename ContextType = nullptr_t>
+class DefaultProperty final : public PropertyBase<BoundDataType, ContextType>
 {
-	using SubscriberHandleToDelegateType = std::pair<PropertySubscriberHandle, std::function<bool(BoundDataType&)>>;
+	using SubscriberHandleToDelegateType = std::pair<PropertySubscriberHandle, PropertyBase<BoundDataType, ContextType>::TransformerType>;
 
 public:
-	DefaultProperty(BoundDataType& BoundDataValue) : PropertyBase<BoundDataType>(BoundDataValue) {}
+	DefaultProperty(BoundDataType& BoundDataValue) : PropertyBase<BoundDataType, ContextType>(BoundDataValue) {}
 
 	bool Unsubscribe(PropertySubscriberHandle SubscriberHandle) override
 	{
@@ -81,21 +81,21 @@ public:
 	}
 
 protected:
-	PropertySubscriberHandle OnSubscribePreTransform(std::function<bool(BoundDataType&)> Delegate) override
+	PropertySubscriberHandle OnSubscribePreTransform(PropertyBase<BoundDataType, ContextType>::TransformerType Delegate) override
 	{
 		return Subscribe(Delegate, PreOrderedSubscriberHandlesToDelegates);
 	}
 
-	PropertySubscriberHandle OnSubscribePostTransform(std::function<bool(BoundDataType&)> Delegate) override
+	PropertySubscriberHandle OnSubscribePostTransform(PropertyBase<BoundDataType, ContextType>::TransformerType Delegate) override
 	{
 		return Subscribe(Delegate, PostOrderedSubscriberHandlesToDelegates);
 	}
 
-	bool OnPreTransform(BoundDataType& BoundData) override
+	bool OnPreTransform(BoundDataType& BoundData, ContextType& Context) override
 	{
 		for (const auto& SubscriberHandleToDelegate : PreOrderedSubscriberHandlesToDelegates)
 		{
-			if (!SubscriberHandleToDelegate.second(BoundData))
+			if (!SubscriberHandleToDelegate.second(BoundData, Context))
 			{
 				return false;
 			}
@@ -104,11 +104,11 @@ protected:
 		return true;
 	}
 
-	bool OnPostTransform(BoundDataType& BoundData) override
+	bool OnPostTransform(BoundDataType& BoundData, ContextType& Context) override
 	{
 		for (const auto& SubscriberHandleToDelegate : PostOrderedSubscriberHandlesToDelegates)
 		{
-			if (!SubscriberHandleToDelegate.second(BoundData))
+			if (!SubscriberHandleToDelegate.second(BoundData, Context))
 			{
 				return false;
 			}
@@ -118,7 +118,7 @@ protected:
 	}
 
 private:
-	PropertySubscriberHandle Subscribe(std::function<bool(BoundDataType&)> Delegate, std::list<SubscriberHandleToDelegateType>& OrderedSubscriberHandlesToDelegates)
+	PropertySubscriberHandle Subscribe(PropertyBase<BoundDataType, ContextType>::TransformerType Delegate, std::list<SubscriberHandleToDelegateType>& OrderedSubscriberHandlesToDelegates)
 	{
 		{
 			assert(CurrentId >= 0);
@@ -150,7 +150,7 @@ private:
 	static int CurrentId;
 };
 
-template<class BoundDataType>
-int DefaultProperty<BoundDataType>::CurrentId = 0;
+template<class BoundDataType, typename ContextType>
+int DefaultProperty<BoundDataType, ContextType>::CurrentId = 0;
 }
 
