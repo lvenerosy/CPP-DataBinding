@@ -66,8 +66,6 @@ void MVVM_Example()
 	PersonViewModel PersonBindings(PersonData);
 	PersonView PersonUI;
 
-	constexpr bool ExecuteOnSubscribe = true;
-
 	auto PreTransformHandle = PersonBindings.PersonProperty.ExecuteAndSubscribePreTransform(PersonUI.OnPreNameChange, DataBinding::NullContext);
 	PersonBindings.PersonProperty.SubscribePostTransform(PersonUI.OnPostNameChange);
 
